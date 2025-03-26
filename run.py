@@ -20,7 +20,7 @@ print(dataset)
 # 确保使用一致的分词器路径
 tokenizer = Util.load_or_download_tokenizer(
     "Doge-tokenizer", 
-    max_length=512,
+    max_length=1024,
     padding_side="right"  # 确保填充在右侧
 )
 
@@ -30,9 +30,13 @@ if tokenizer.pad_token is None:
 
 # 改进的聊天格式，更清晰地分隔输入和输出
 def format_prompt(prompt):
-    return {
-        "text": f"<s>你是一个名叫Doge的AI助手。请用简洁、友好的方式回答用户的问题。</s>\n<user>{prompt['instruction']}</user>\n<assistant>{prompt['output']}</assistant>"
-    }
+    chat = [
+        {"role": "system", "content": "你是一个AI助手，擅长回答用户的问题。"},
+        {"role": "user", "content": prompt["instruction"]},
+        {"role": "assistant", "content": prompt["output"] }
+    ]
+    tokenizer.apply_chat_template(chat, tokenize=False)
+    return {"text": tokenizer.apply_chat_template(chat, tokenize=False)}
 
 dataset = dataset.map(format_prompt, remove_columns=dataset.column_names)
 print(dataset)
@@ -87,24 +91,25 @@ trainer_arg = TrainingArguments(
     optim="adamw_torch",
     learning_rate=2e-5,                # 略微提高学习率
     lr_scheduler_type="cosine",
-    warmup_ratio=0.1,
-    num_train_epochs=3,                # 增加训练轮次
+    warmup_ratio=0.1,              # 增加训练轮次
     logging_steps=10,
     bf16=True,
     gradient_checkpointing=True,
-    save_strategy="epoch",             # 改为每个epoch保存一次
     # 下面这些设置有助于稳定训练
     dataloader_drop_last=True,
     ddp_find_unused_parameters=False,
     no_cuda=False,
     remove_unused_columns=True,
+    max_steps=3000,
+    save_steps=500,  # 修改为与eval_steps相同的值
     # 梯度裁剪避免梯度爆炸
     max_grad_norm=1.0,
     # 添加评估
-    eval_strategy="epoch",             # 改为每个epoch评估一次
+    evaluation_strategy="steps",
+    eval_steps=500,
+    load_best_model_at_end=True,
     # 添加checkpoint
     save_total_limit=3,
-    load_best_model_at_end=True,
     metric_for_best_model="loss"
 )
 
