@@ -1,0 +1,8 @@
+# Dependencies for Doge-SFT project
+torch
+transformers
+datasets
+peft
+trl
+wandb
+numpy
