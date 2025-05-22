@@ -98,21 +98,28 @@ class Util:
         
         def parse_slice(s: str) -> tuple:
             # 解析类似"[:50]"的切片语法
-            s = s.split("[")[1].rstrip("]")
-            if ":" in s:
-                parts = s.split(":")
-                if len(parts) == 2:
-                    start, end = parts
-                    start = int(start) if start else 0
-                    end = int(end) if end else None
-                    return (start, end if end is not None else float('inf'))
-                elif len(parts) == 3:  # 处理step
-                    start, end, step = parts
-                    start = int(start) if start else 0
-                    end = int(end) if end else None
-                    # 简单处理，忽略step
-                    return (start, end if end is not None else float('inf'))
-            return (0, int(s))
+            try:
+                s = s.split("[")[1].rstrip("]")
+                if ":" in s:
+                    parts = s.split(":")
+                    if len(parts) == 2:
+                        start, end = parts
+                        start = int(start) if start else 0
+                        end = int(end) if end else None
+                        return (start, end if end is not None else float('inf'))
+                    elif len(parts) == 3:  # 处理step
+                        start, end, step = parts
+                        start = int(start) if start else 0
+                        end = int(end) if end else None
+                        step = int(step) if step else 1  # 处理step
+                        # 简化处理，忽略step，只返回开始和结束索引
+                        return (start, end if end is not None else float('inf'))
+                return (0, int(s))
+            except (ValueError, IndexError) as e:
+                logger = logging.getLogger("error.parse_slice")
+                logger.error(f"解析切片语法错误: {s}, {str(e)}")
+                # 返回默认值
+                return (0, float('inf'))
         
         # 创建远程加载处理函数
         def load_remote(source, **args):
@@ -123,15 +130,27 @@ class Util:
         
         # 创建本地加载处理函数
         def load_local(source, **args):
-            ds = load_from_disk(source)
-            if split and "[" in split:  # 处理切片语法
-                split_name = split.split("[")[0]
-                if split_name in ds:
-                    return ds[split_name].select(range(*parse_slice(split)))
-            elif split:  # 普通split
-                if split in ds:
-                    return ds[split]
-            return ds
+            try:
+                ds = load_from_disk(source)
+                if split:
+                    if "[" in split:  # 处理切片语法
+                        split_name = split.split("[")[0]
+                        if split_name in ds:
+                            return ds[split_name].select(range(*parse_slice(split)))
+                        else:
+                            logger = logging.getLogger("warning.dataset")
+                            logger.warning(f"指定的split '{split_name}' 不存在于数据集中")
+                            return ds  # 返回完整数据集
+                    elif split in ds:  # 普通split
+                        return ds[split]
+                    else:
+                        logger = logging.getLogger("warning.dataset")
+                        logger.warning(f"指定的split '{split}' 不存在于数据集中")
+                return ds
+            except Exception as e:
+                logger = logging.getLogger("error.dataset")
+                logger.error(f"加载本地数据集失败: {str(e)}", exc_info=True)
+                raise e
             
         return load_or_download(
             "数据集",

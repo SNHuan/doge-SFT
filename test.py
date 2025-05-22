@@ -66,8 +66,14 @@ for prompt in test_prompts:
     # 提取assistant的回复部分
     try:
         # 获取assistant标签后的内容
-        response = result.split("<assistant>")[-1].strip()
-    except:
+        assistant_content = result.split("<assistant>")[-1].strip()
+        # 如果内容中包含</assistant>标签，只取其前面的部分
+        if "</assistant>" in assistant_content:
+            response = assistant_content.split("</assistant>")[0].strip()
+        else:
+            response = assistant_content
+    except Exception as e:
+        print(f"解析回复时出错: {e}")
         response = result
     
     print(f"模型回答: {response}")
@@ -94,8 +100,15 @@ def interactive_test():
         
         # 提取assistant的回复部分
         try:
-            response = result.split("<assistant>")[-1].strip()
-        except:
+            # 获取assistant标签后的内容
+            assistant_content = result.split("<assistant>")[-1].strip()
+            # 如果内容中包含</assistant>标签，只取其前面的部分
+            if "</assistant>" in assistant_content:
+                response = assistant_content.split("</assistant>")[0].strip()
+            else:
+                response = assistant_content
+        except Exception as e:
+            print(f"解析回复时出错: {e}")
             response = result
             
         print(f"Doge: {response}")

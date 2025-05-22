@@ -18,7 +18,7 @@ from trl import (
 
 model_file = './models/model/SmallDoge-60M/'
 tokenizer_file = './models/tokenizer/Doge-tokenizer/'
-datset_file = './models/dataset/Congliu/Chinese-DeepSeek-R1-Distill-data-110k-SFT/'
+dataset_file = './models/dataset/Congliu/Chinese-DeepSeek-R1-Distill-data-110k-SFT/'
 
 model = AutoModelForCausalLM.from_pretrained(
     model_file,
@@ -28,7 +28,7 @@ model = AutoModelForCausalLM.from_pretrained(
 
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_file,trust_remote_code=True)
 
-dataset = load_from_disk(datset_file)
+dataset = load_from_disk(dataset_file)
 
 def prompt_func(prompt):
     message = [
